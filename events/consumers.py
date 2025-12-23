@@ -1,3 +1,4 @@
+import asyncio
 import json
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -38,7 +39,7 @@ class EventConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
-
+        self.refresh_task=asyncio.create_task(self.refresh_session())
     async def disconnect(self):
         await self.channel_layer.group_discard(
             self.group_name,
@@ -54,3 +55,13 @@ class EventConsumer(AsyncWebsocketConsumer):
     async def event_message(self, event):
     
         await self.send(text_data=json.dumps(event['payload']))
+
+    async def refresh_session(self):
+        while True:
+            await asyncio.sleep(600)
+            await self.touch_session()
+
+    async def touch_session(self):
+        session=self.scope.get('session')
+        if session:
+            session.save()
